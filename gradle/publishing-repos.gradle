@@ -34,11 +34,11 @@ publishing {
 
 	repositories {
 		maven {
-            if (mavenVersion.equals('LOCAL') || mavenVersion.endsWith('-SNAPSHOT')) {
-                url 'http://artifactory.bullhorn.com/bh-snapshots'
-            } else {
-                url 'http://artifactory.bullhorn.com/bh-releases'
-            }
+			if (mavenVersion.equals('LOCAL') || mavenVersion.endsWith('-SNAPSHOT')) {
+				url 'http://artifactory.bullhorn.com/bh-snapshots'
+			} else {
+				url 'http://artifactory.bullhorn.com/bh-releases'
+			}
 		 }
 	}
 }
