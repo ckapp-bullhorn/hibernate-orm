@@ -13,25 +13,6 @@ apply plugin: 'antlr'
 apply plugin: 'hibernate-matrix-testing'
 apply plugin: 'org.hibernate.build.gradle.xjc'
 
-archivesBaseName = 'hibernate-core-BH'
-version = project.property('version') + '.BH.LOCAL'
-
-publishing {
-    publications {
-        maven(MavenPublication) {
-            groupId = 'org.hibernate'
-            artifactId = 'hibernate-core-BH'
-            version = 'LOCAL'
-
-            pom {
-                description = 'BH Custom Hibernate'
-            }
-
-            from components.java
-       }
-    }
-}
-
 ext {
     jaxbTargetDir = file( "${buildDir}/generated-src/jaxb/main" )
 }

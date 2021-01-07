@@ -12,7 +12,6 @@ apply plugin: 'maven-publish'
 apply plugin: 'org.hibernate.build.maven-repo-auth'
 apply plugin: 'com.jfrog.bintray'
 
-
 ext {
 	bintrayUser = project.findProperty( 'PERSONAL_BINTRAY_USER' )
 	bintrayKey = project.findProperty( 'PERSONAL_BINTRAY_API_KEY' )
@@ -23,14 +22,20 @@ ext {
 
 publishing {
 	publications {
-		publishedArtifacts( MavenPublication )
+		publishedArtifacts( MavenPublication ) {
+			artifactId = project.name + '-BH'
+			version = 'LOCAL'
+		}
 	}
 
 	repositories {
 		maven {
-			name 'jboss-snapshots-repository'
-			url 'https://repository.jboss.org/nexus/content/repositories/snapshots'
-		}
+            if (publications.publishedArtifacts.version.equals('LOCAL') || publications.publishedArtifacts.version.endsWith('-SNAPSHOT')) {
+                url 'http://artifactory.bullhorn.com/bh-snapshots'
+            } else {
+                url 'http://artifactory.bullhorn.com/bh-releases'
+            }
+		 }
 	}
 }
 
