@@ -441,7 +441,9 @@ public abstract class EntityType extends AbstractType implements AssociationType
 			SessionFactoryImplementor factory,
 			Map enabledFilters,
 			Set<String> treatAsDeclarations) {
-		if ( isReferenceToPrimaryKey() && ( treatAsDeclarations == null || treatAsDeclarations.isEmpty() ) ) {
+		if ( isReferenceToPrimaryKey()
+				&& ( treatAsDeclarations == null || treatAsDeclarations.isEmpty() )
+				&& ( enabledFilters == null || enabledFilters.isEmpty() ) ) {
 			return "";
 		}
 		else {
