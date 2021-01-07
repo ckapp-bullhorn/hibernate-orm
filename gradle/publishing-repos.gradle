@@ -19,18 +19,22 @@ ext {
 	sonatypeOssrhPassword = project.findProperty( 'SONATYPE_OSSRH_PASSWORD' )
 }
 
+String mavenVersion = System.getenv('ARTIFACT_VERSION')
+if (null == mavenVersion || 0 == mavenVersion.length()) {
+	mavenVersion = 'LOCAL'
+}
 
 publishing {
 	publications {
 		publishedArtifacts( MavenPublication ) {
 			artifactId = project.name + '-BH'
-			version = 'LOCAL'
+			version = mavenVersion
 		}
 	}
 
 	repositories {
 		maven {
-            if (publications.publishedArtifacts.version.equals('LOCAL') || publications.publishedArtifacts.version.endsWith('-SNAPSHOT')) {
+            if (mavenVersion.equals('LOCAL') || mavenVersion.endsWith('-SNAPSHOT')) {
                 url 'http://artifactory.bullhorn.com/bh-snapshots'
             } else {
                 url 'http://artifactory.bullhorn.com/bh-releases'
