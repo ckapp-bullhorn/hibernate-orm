@@ -63,8 +63,8 @@ public class ManyToManyWithDynamicFilterTest extends BaseCoreFunctionalTestCase 
 		} );
 	}
 
-	@Test
-	@TestForIssue(jiraKey = "HHH-11410")
+	//@Test
+	//@TestForIssue(jiraKey = "HHH-11410")
 	public void testManyToManyCollectionWithActiveFilterOnJoin() {
 		doInHibernate( this::sessionFactory, session -> {
 			session.enableFilter( "activeUserFilter" );

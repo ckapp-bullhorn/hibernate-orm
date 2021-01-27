@@ -464,7 +464,7 @@ public abstract class EntityType extends AbstractType implements AssociationType
 		}
 
 		try {
-			java.lang.reflect.Field f = associatedEntityPersister.getClass().getDeclaredField("filterHelper"); //NoSuchFieldException
+			java.lang.reflect.Field f = org.hibernate.persister.entity.AbstractEntityPersister.class.getDeclaredField("filterHelper"); //NoSuchFieldException
 			f.setAccessible(true);
 			org.hibernate.internal.FilterHelper filterHelper = (org.hibernate.internal.FilterHelper) f.get(associatedEntityPersister); //IllegalAccessException
 			return filterHelper.isAffectedBy(enabledFilters);
