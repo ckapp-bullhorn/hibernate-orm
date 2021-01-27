@@ -443,11 +443,37 @@ public abstract class EntityType extends AbstractType implements AssociationType
 			Set<String> treatAsDeclarations) {
 		if ( isReferenceToPrimaryKey()
 				&& ( treatAsDeclarations == null || treatAsDeclarations.isEmpty() )
-				&& ( enabledFilters == null || enabledFilters.isEmpty() ) ) {
+				&& ( !doesFilterApply(enabledFilters) ) ) {
 			return "";
 		}
 		else {
 			return getAssociatedJoinable( factory ).filterFragment( alias, enabledFilters, treatAsDeclarations );
+		}
+	}
+
+	private boolean doesFilterApply(Map enabledFilters) {
+		if (enabledFilters == null) {
+			return false;
+		}
+		if (enabledFilters.isEmpty()) {
+			return false;
+		}
+
+		if (!(associatedEntityPersister instanceof org.hibernate.persister.entity.AbstractEntityPersister)) {
+			return false;
+		}
+
+		try {
+			java.lang.reflect.Field f = associatedEntityPersister.getClass().getDeclaredField("filterHelper"); //NoSuchFieldException
+			f.setAccessible(true);
+			org.hibernate.internal.FilterHelper filterHelper = (org.hibernate.internal.FilterHelper) f.get(associatedEntityPersister); //IllegalAccessException
+			return filterHelper.isAffectedBy(enabledFilters);
+		}
+		catch (IllegalAccessException e) {
+			return false;
+		}
+		catch (NoSuchFieldException e) {
+			return false;
 		}
 	}
 
