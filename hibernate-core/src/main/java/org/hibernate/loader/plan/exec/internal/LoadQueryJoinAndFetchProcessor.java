@@ -215,7 +215,12 @@ public class LoadQueryJoinAndFetchProcessor {
 			return "";
 		}
 		else if ( StringHelper.isNotEmpty( withClause ) && StringHelper.isNotEmpty( filter ) ) {
-			return filter + " and " + withClause;
+			if (withClause.startsWith(" and ")) {
+				return filter + withClause;
+			}
+			else {
+				return filter + " and " + withClause;
+			}
 		}
 		else {
 			// only one is non-empty...

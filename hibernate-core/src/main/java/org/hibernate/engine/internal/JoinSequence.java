@@ -334,9 +334,8 @@ public class JoinSequence {
 						join.getAlias(),
 						enabledFilters
 				);
-				condition = (manyToManyFilter != null && manyToManyFilter.isEmpty())
-						? on
-						: (on != null && on.isEmpty()) ? manyToManyFilter : on + " and " + manyToManyFilter;
+
+				condition = joinWithAnd(on, manyToManyFilter);
 			}
 			else {
 				condition = on;
@@ -382,6 +381,21 @@ public class JoinSequence {
 		}
 
 		return joinFragment;
+	}
+
+	private String joinWithAnd(String firstPart, String secondPart) {
+		if (secondPart != null && secondPart.isEmpty()) {
+			return firstPart;
+		}
+		else if (firstPart != null && firstPart.isEmpty()) {
+			return secondPart;
+		}
+		else if (secondPart.startsWith(" and ")){
+			return firstPart + secondPart;
+		}
+		else {
+			return firstPart + " and " + secondPart;
+		}
 	}
 
 	private boolean needsTableGroupJoin(List<Join> joins, String withClauseFragment) {
