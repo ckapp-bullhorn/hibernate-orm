@@ -174,6 +174,9 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 
 	// todo : org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor too?
 
+	private static Object sharedMetamodelMutex = "";
+	private static MetamodelImplementor sharedMetamodel;
+	private final transient boolean isSharedMetamodel;
 	private final transient MetamodelImplementor metamodel;
 	private final transient CriteriaBuilderImpl criteriaBuilder;
 	private final PersistenceUnitUtil jpaPersistenceUnitUtil;
@@ -199,9 +202,11 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 	public SessionFactoryImpl(
 			final MetadataImplementor metadata,
 			SessionFactoryOptions options,
-			QueryPlanCache.QueryPlanCreator queryPlanCacheFunction) {
+			QueryPlanCache.QueryPlanCreator queryPlanCacheFunction,
+			final boolean isSharedMetamodel) {
 		LOG.debug( "Building session factory" );
 
+		this.isSharedMetamodel = isSharedMetamodel;
 		this.sessionFactoryOptions = options;
 		this.settings = new Settings( options, metadata );
 
@@ -297,11 +302,28 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 
 			LOG.debug( "Instantiated session factory" );
 
-			this.metamodel = metadata.getTypeConfiguration().scope( this );
-			( (MetamodelImpl) this.metamodel ).initialize(
+			if (isSharedMetamodel) {
+				synchronized (sharedMetamodelMutex) {
+					if (null == sharedMetamodel) {
+						this.metamodel = metadata.getTypeConfiguration().scope( this );
+						( (MetamodelImpl) this.metamodel ).initialize(
+							metadata,
+							determineJpaMetaModelPopulationSetting( properties )
+						);
+
+						sharedMetamodel = this.metamodel;
+					} else {
+						this.metamodel = sharedMetamodel;
+					}
+				}
+
+			} else {
+				this.metamodel = metadata.getTypeConfiguration().scope( this );
+				( (MetamodelImpl) this.metamodel ).initialize(
 					metadata,
 					determineJpaMetaModelPopulationSetting( properties )
-			);
+				);
+			}
 
 			//Named Queries:
 			this.namedQueryRepository = metadata.buildNamedQueryRepository( this );
@@ -785,7 +807,11 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		}
 
 		if ( metamodel != null ) {
-			metamodel.close();
+			if (sharedMetamodel != null && sharedMetamodel.equals(metamodel)) {
+				//do not close the shared model
+			} else {
+				metamodel.close();
+			}
 		}
 
 		if ( queryPlanCache != null ) {

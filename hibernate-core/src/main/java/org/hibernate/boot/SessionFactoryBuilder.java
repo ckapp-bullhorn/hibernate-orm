@@ -752,6 +752,7 @@ public interface SessionFactoryBuilder {
 	 */
 	SessionFactoryBuilder enableJpaClosedCompliance(boolean enabled);
 
+	SessionFactoryBuilder enableSharedMetamodel(boolean enabled);
 
 	/**
 	 * Allows unwrapping this builder as another, more specific type.

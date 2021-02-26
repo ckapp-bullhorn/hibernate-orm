@@ -440,6 +440,13 @@ public class SessionFactoryBuilderImpl implements SessionFactoryBuilderImplement
 		return this;
 	}
 
+	boolean isSharedMetamodel;
+	@Override
+	public SessionFactoryBuilder enableSharedMetamodel(boolean enabled) {
+		isSharedMetamodel = enabled;
+		return this;
+	}
+
 	@Override
 	public void disableRefreshDetachedEntity() {
 		this.optionsBuilder.disableRefreshDetachedEntity();
@@ -466,7 +473,7 @@ public class SessionFactoryBuilderImpl implements SessionFactoryBuilderImplement
 		final StandardServiceRegistry serviceRegistry = metadata.getMetadataBuildingOptions().getServiceRegistry();
 		BytecodeProvider bytecodeProvider = serviceRegistry.getService( BytecodeProvider.class );
 		addSessionFactoryObservers( new SessionFactoryObserverForBytecodeEnhancer( bytecodeProvider ) );
-		return new SessionFactoryImpl( metadata, buildSessionFactoryOptions(), HQLQueryPlan::new );
+		return new SessionFactoryImpl( metadata, buildSessionFactoryOptions(), HQLQueryPlan::new, isSharedMetamodel );
 	}
 
 	@Override

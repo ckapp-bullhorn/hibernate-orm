@@ -117,7 +117,7 @@ public class EntityManagerFactoryBuilderImpl implements EntityManagerFactoryBuil
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// New settings
-
+	public static final String SHARE_METAMODEL = "hibernate.share.metamodel";
 	/**
 	 * Names a {@link IntegratorProvider}
 	 */
@@ -1304,6 +1304,9 @@ public class EntityManagerFactoryBuilderImpl implements EntityManagerFactoryBuil
 		if ( this.cdiBeanManager != null ) {
 			sfBuilder.applyBeanManager( cdiBeanManager );
 		}
+
+		final boolean isSharedMetamodel = readBooleanConfigurationValue( SHARE_METAMODEL );
+		sfBuilder.enableSharedMetamodel(isSharedMetamodel);
 	}
 
 
