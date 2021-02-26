@@ -312,12 +312,14 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 						);
 
 						sharedMetamodel = this.metamodel;
-					} else {
+					}
+					else {
 						this.metamodel = sharedMetamodel;
 					}
 				}
 
-			} else {
+			}
+			else {
 				this.metamodel = metadata.getTypeConfiguration().scope( this );
 				( (MetamodelImpl) this.metamodel ).initialize(
 					metadata,
@@ -809,7 +811,8 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		if ( metamodel != null ) {
 			if (sharedMetamodel != null && sharedMetamodel.equals(metamodel)) {
 				//do not close the shared model
-			} else {
+			}
+			else {
 				metamodel.close();
 			}
 		}
