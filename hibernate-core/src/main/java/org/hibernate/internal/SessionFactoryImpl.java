@@ -303,21 +303,22 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			LOG.debug( "Instantiated session factory" );
 
 			if (isSharedMetamodel) {
-				synchronized (sharedMetamodelMutex) {
-					if (null == sharedMetamodel) {
-						this.metamodel = metadata.getTypeConfiguration().scope( this );
-						( (MetamodelImpl) this.metamodel ).initialize(
-							metadata,
-							determineJpaMetaModelPopulationSetting( properties )
-						);
+				if (null == sharedMetamodel) {
+					synchronized (sharedMetamodelMutex) {
+						if (null == sharedMetamodel) {
+							MetamodelImplementor temp = metadata.getTypeConfiguration().scope(this);
+							((MetamodelImpl) temp).initialize(
+								metadata,
+								determineJpaMetaModelPopulationSetting(properties)
+							);
 
-						sharedMetamodel = this.metamodel;
-					}
-					else {
+							sharedMetamodel = temp;
+						}
 						this.metamodel = sharedMetamodel;
 					}
+				} else {
+					this.metamodel = sharedMetamodel;
 				}
-
 			}
 			else {
 				this.metamodel = metadata.getTypeConfiguration().scope( this );
