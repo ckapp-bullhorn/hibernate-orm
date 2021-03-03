@@ -12,7 +12,7 @@ public class TimeLog implements AutoCloseable {
 	private static final Logger LOG = Logger.getLogger( TimeLog.class );
 	private final long start;
 	private final String message;
-	private boolean stillNeedToLog;
+	private boolean stillNeedToLog = true;
 
 	public TimeLog(String message) {
 		this.start = System.currentTimeMillis();
