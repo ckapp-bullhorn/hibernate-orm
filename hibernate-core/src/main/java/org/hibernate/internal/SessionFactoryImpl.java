@@ -302,14 +302,19 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 
 			LOG.debug( "Instantiated session factory" );
 
+			String dbName =
+				(null != jdbcServices && null != jdbcServices.getJdbcEnvironment())
+					? String.valueOf(jdbcServices.getJdbcEnvironment().getCurrentCatalog())
+					: "";
+
 			if (isSharedMetamodel) {
-				LOG.debug( "Using sharedMetamodel" );
+				LOG.debug( "Using sharedMetamodel: " + dbName );
 				if (null == sharedMetamodel) {
-					LOG.debug( "Acquiring sharedMetamodelMutex" );
+					LOG.debug( "Acquiring sharedMetamodelMutex: " + dbName );
 					long start = System.currentTimeMillis();
 					synchronized (sharedMetamodelMutex) {
 						long duration = System.currentTimeMillis() - start;
-						LOG.info( "Waited on sharedMetamodelMutex for " + duration );
+						LOG.info( "Waited on sharedMetamodelMutex for " + dbName + " for " + duration );
 
 						if (null == sharedMetamodel) {
 							start = System.currentTimeMillis();
@@ -319,7 +324,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 								determineJpaMetaModelPopulationSetting(properties)
 							);
 							duration = System.currentTimeMillis() - start;
-							LOG.info( "sharedMetamodel built in " + duration );
+							LOG.info( "sharedMetamodel for " + dbName + " built in " + duration );
 
 							sharedMetamodel = temp;
 						}
@@ -330,6 +335,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 				}
 			}
 			else {
+				LOG.debug( "Not using sharedMetamodel: " + dbName );
 				this.metamodel = metadata.getTypeConfiguration().scope( this );
 				( (MetamodelImpl) this.metamodel ).initialize(
 					metadata,
