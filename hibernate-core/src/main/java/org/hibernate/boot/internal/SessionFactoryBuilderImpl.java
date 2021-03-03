@@ -18,6 +18,7 @@ import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.NullPrecedence;
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
+import org.hibernate.TimeLog;
 import org.hibernate.boot.SessionFactoryBuilder;
 import org.hibernate.boot.TempTableDdlTransactionHandling;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -469,11 +470,13 @@ public class SessionFactoryBuilderImpl implements SessionFactoryBuilderImplement
 
 	@Override
 	public SessionFactory build() {
-		metadata.validate();
-		final StandardServiceRegistry serviceRegistry = metadata.getMetadataBuildingOptions().getServiceRegistry();
-		BytecodeProvider bytecodeProvider = serviceRegistry.getService( BytecodeProvider.class );
-		addSessionFactoryObservers( new SessionFactoryObserverForBytecodeEnhancer( bytecodeProvider ) );
-		return new SessionFactoryImpl( metadata, buildSessionFactoryOptions(), HQLQueryPlan::new, isSharedMetamodel );
+		try (TimeLog timeLog = new TimeLog("SessionFactoryBuilderImpl:build")) {
+			metadata.validate();
+			final StandardServiceRegistry serviceRegistry = metadata.getMetadataBuildingOptions().getServiceRegistry();
+			BytecodeProvider bytecodeProvider = serviceRegistry.getService(BytecodeProvider.class);
+			addSessionFactoryObservers(new SessionFactoryObserverForBytecodeEnhancer(bytecodeProvider));
+			return new SessionFactoryImpl(metadata, buildSessionFactoryOptions(), HQLQueryPlan::new, isSharedMetamodel);
+		}
 	}
 
 	@Override

@@ -12,6 +12,7 @@ import java.util.Iterator;
 import java.util.Map;
 
 import org.hibernate.HibernateException;
+import org.hibernate.TimeLog;
 import org.hibernate.boot.spi.BootstrapContext;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
@@ -108,11 +109,13 @@ public class EventListenerRegistryImpl implements EventListenerRegistry, Stoppab
 			SessionFactoryImplementor sessionFactory,
 			SessionFactoryOptions sessionFactoryOptions,
 			ServiceRegistryImplementor registry) {
+		TimeLog timeLog = new TimeLog("EventListenerRegistryImpl:EventListenerRegistryImpl");
 		this.sessionFactory = sessionFactory;
 
 		this.callbackRegistry = CallbacksFactory.buildCallbackRegistry( sessionFactory );
 
 		this.registeredEventListeners = buildListenerGroups();
+		timeLog.complete();
 	}
 
 	EventListenerRegistryImpl(BootstrapContext bootstrapContext, SessionFactoryImplementor sessionFactory) {
@@ -253,6 +256,7 @@ public class EventListenerRegistryImpl implements EventListenerRegistry, Stoppab
 	}
 
 	private EventListenerGroupImpl[] buildListenerGroups() {
+		TimeLog timeLog = new TimeLog("EventListenerRegistryImpl:buildListenerGroups");
 		EventListenerGroupImpl[] listenerArray = new EventListenerGroupImpl[ EventType.values().size() ];
 
 		// auto-flush listeners
@@ -493,6 +497,7 @@ public class EventListenerRegistryImpl implements EventListenerRegistry, Stoppab
 				listenerArray
 		);
 
+		timeLog.complete();
 		return listenerArray;
 	}
 

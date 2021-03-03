@@ -45,6 +45,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
 import org.hibernate.StatelessSession;
 import org.hibernate.StatelessSessionBuilder;
+import org.hibernate.TimeLog;
 import org.hibernate.TypeHelper;
 import org.hibernate.boot.cfgxml.spi.CfgXmlAccessService;
 import org.hibernate.boot.cfgxml.spi.LoadedConfig;
@@ -206,6 +207,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			QueryPlanCache.QueryPlanCreator queryPlanCacheFunction,
 			final boolean isSharedMetamodel) {
 		LOG.debug( "Building session factory" );
+		TimeLog timeLog = new TimeLog("SessionFactoryImpl:SessionFactoryImpl");
 
 		this.isSharedMetamodel = isSharedMetamodel;
 		this.sessionFactoryOptions = options;
@@ -284,10 +286,12 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		final IntegratorObserver integratorObserver = new IntegratorObserver();
 		this.observer.addObserver( integratorObserver );
 		try {
+			TimeLog timeLog1 = new TimeLog("SessionFactoryImpl:SessionFactoryImpl: add integrators");
 			for ( Integrator integrator : serviceRegistry.getService( IntegratorService.class ).getIntegrators() ) {
 				integrator.integrate( metadata, this, this.serviceRegistry );
 				integratorObserver.integrators.add( integrator );
 			}
+			timeLog1.complete();
 			//Generators:
 			this.identifierGenerators = new HashMap<>();
 			metadata.getEntityBindings().stream().filter( model -> !model.isInherited() ).forEach( model -> {
@@ -313,11 +317,14 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 				if (null == sharedMetamodel) {
 					LOG.debug( "Acquiring sharedMetamodelMutex: " + dbName );
 					long start = System.currentTimeMillis();
+					TimeLog timeLog2 = new TimeLog("SessionFactoryImpl:SessionFactoryImpl: getting sharedMetamodelMutex");
 					synchronized (sharedMetamodelMutex) {
 						long duration = System.currentTimeMillis() - start;
+						timeLog2.complete();
 						LOG.info( "Waited on sharedMetamodelMutex for " + dbName + " for " + duration );
 
 						if (null == sharedMetamodel) {
+							TimeLog timeLog3 = new TimeLog("SessionFactoryImpl:SessionFactoryImpl: build Metamodel");
 							start = System.currentTimeMillis();
 							tempMetamodel = metadata.getTypeConfiguration().scope(this);
 							((MetamodelImpl) tempMetamodel).initialize(
@@ -328,6 +335,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 							LOG.info( "sharedMetamodel for " + dbName + " built in " + duration );
 
 							sharedMetamodel = tempMetamodel;
+							timeLog3.complete();
 						}
 						this.metamodel = sharedMetamodel;
 					}
@@ -385,6 +393,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 				}
 			}
 
+			TimeLog timeLog4 = new TimeLog("SessionFactoryImpl:SessionFactoryImpl: 4");
 			// this needs to happen after persisters are all ready to go...
 			this.fetchProfiles = new HashMap<>();
 			for ( org.hibernate.mapping.FetchProfile mappingProfile : metadata.getFetchProfiles() ) {
@@ -417,6 +426,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 				}
 				fetchProfiles.put( fetchProfile.getName(), fetchProfile );
 			}
+			timeLog4.complete();
 
 			this.defaultSessionOpenOptions = withOptions();
 			this.temporarySessionOpenOptions = buildTemporarySessionOpenOptions();
@@ -435,6 +445,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			//As last operation, delete all caches from ReflectionManager
 			//(not modelled as a listener as we want this to be last)
 			HCANNHelper.resetIfResetMethodExists( metadata.getMetadataBuildingOptions().getReflectionManager() );
+			timeLog.complete();
 		}
 		catch (Exception e) {
 			for ( Integrator integrator : serviceRegistry.getService( IntegratorService.class ).getIntegrators() ) {

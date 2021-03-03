@@ -20,6 +20,7 @@ import java.util.regex.Pattern;
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.SessionFactory;
+import org.hibernate.TimeLog;
 import org.hibernate.boot.SessionFactoryBuilder;
 import org.hibernate.boot.model.IdentifierGeneratorDefinition;
 import org.hibernate.boot.model.TypeDefinition;
@@ -368,6 +369,7 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 
 	@Override
 	public void initSessionFactory(SessionFactoryImplementor sessionFactory) {
+		TimeLog timeLog = new TimeLog("MetadataImpl:initSessionFactory");
 		final ServiceRegistryImplementor sessionFactoryServiceRegistry = sessionFactory.getServiceRegistry();
 
 		assert sessionFactoryServiceRegistry != null;
@@ -395,6 +397,7 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 				eventListenerGroup.appendListener( instantiate( listenerImpl, classLoaderService ) );
 			}
 		}
+		timeLog.complete();
 	}
 
 	private Object instantiate(String listenerImpl, ClassLoaderService classLoaderService) {

@@ -17,6 +17,7 @@ import javax.naming.event.NamingExceptionEvent;
 import javax.naming.spi.ObjectFactory;
 
 import org.hibernate.SessionFactory;
+import org.hibernate.TimeLog;
 import org.hibernate.engine.jndi.JndiException;
 import org.hibernate.engine.jndi.JndiNameException;
 import org.hibernate.engine.jndi.spi.JndiService;
@@ -69,11 +70,16 @@ public class SessionFactoryRegistry {
 		if ( uuid == null ) {
 			throw new IllegalArgumentException( "SessionFactory UUID cannot be null" );
 		}
+		TimeLog timeLog = new TimeLog("SessionFactoryRegistry:addSessionFactory");
 
 		LOG.debugf( "Registering SessionFactory: %s (%s)", uuid, name == null ? "<unnamed>" : name );
+		TimeLog timeLog1 = new TimeLog("SessionFactoryRegistry:addSessionFactory: adding to sessionFactoryMap");
 		sessionFactoryMap.put( uuid, instance );
+		timeLog1.complete();
 		if ( name != null ) {
+			TimeLog timeLog2 = new TimeLog("SessionFactoryRegistry:addSessionFactory: adding to nameUuidXref");
 			nameUuidXref.put( name, uuid );
+			timeLog2.complete();
 		}
 
 		if ( name == null || !isNameAlsoJndiName ) {
@@ -99,6 +105,7 @@ public class SessionFactoryRegistry {
 		catch (JndiException e) {
 			LOG.unableToBindFactoryToJndi( e );
 		}
+		timeLog.complete();
 	}
 
 	/**

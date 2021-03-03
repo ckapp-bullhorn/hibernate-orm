@@ -16,6 +16,7 @@ import javax.persistence.spi.PersistenceProvider;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.ProviderUtil;
 
+import org.hibernate.TimeLog;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.jpa.boot.internal.ParsedPersistenceXmlDescriptor;
 import org.hibernate.jpa.boot.internal.PersistenceXmlParser;
@@ -136,9 +137,11 @@ public class HibernatePersistenceProvider implements PersistenceProvider {
 	 */
 	@Override
 	public EntityManagerFactory createContainerEntityManagerFactory(PersistenceUnitInfo info, Map properties) {
-		log.tracef( "Starting createContainerEntityManagerFactory : %s", info.getPersistenceUnitName() );
+		try (TimeLog timeLog = new TimeLog("HibernatePersistenceProvider:createContainerEntityManagerFactory")) {
+			log.tracef("Starting createContainerEntityManagerFactory : %s", info.getPersistenceUnitName());
 
-		return getEntityManagerFactoryBuilder( info, properties ).build();
+			return getEntityManagerFactoryBuilder(info, properties).build();
+		}
 	}
 
 	@Override

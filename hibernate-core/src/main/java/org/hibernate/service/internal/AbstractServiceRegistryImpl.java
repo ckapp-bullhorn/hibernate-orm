@@ -16,6 +16,7 @@ import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.function.Consumer;
 
+import org.hibernate.TimeLog;
 import org.hibernate.boot.registry.BootstrapServiceRegistry;
 import org.hibernate.cfg.Environment;
 import org.hibernate.internal.CoreLogging;
@@ -191,6 +192,7 @@ public abstract class AbstractServiceRegistryImpl
 
 	@Override
 	public <R extends Service> R getService(Class<R> serviceRole) {
+		TimeLog timeLog = new TimeLog("AbstractServiceRegistryImpl:getService");
 		// TODO: should an exception be thrown if active == false???
 		R service = serviceRole.cast( initializedServiceByRole.get( serviceRole ) );
 		if ( service != null ) {
@@ -198,13 +200,16 @@ public abstract class AbstractServiceRegistryImpl
 		}
 
 		//Any service initialization needs synchronization
+		TimeLog timeLog1 = new TimeLog("AbstractServiceRegistryImpl:getService: entering synchronized");
 		synchronized ( this ) {
+			timeLog1.complete();
 			// Check again after having acquired the lock:
 			service = serviceRole.cast( initializedServiceByRole.get( serviceRole ) );
 			if ( service != null ) {
 				return service;
 			}
 
+			TimeLog timeLog2 = new TimeLog("AbstractServiceRegistryImpl:getService: building");
 			final ServiceBinding<R> serviceBinding = locateServiceBinding( serviceRole );
 			if ( serviceBinding == null ) {
 				throw new UnknownServiceException( serviceRole );
@@ -217,6 +222,8 @@ public abstract class AbstractServiceRegistryImpl
 				// add the service only after it is completely initialized
 				initializedServiceByRole.put( serviceRole, service );
 			}
+			timeLog2.complete();
+			timeLog.complete();
 			return service;
 		}
 	}
@@ -229,6 +236,7 @@ public abstract class AbstractServiceRegistryImpl
 	}
 
 	private <R extends Service> R initializeService(ServiceBinding<R> serviceBinding) {
+		TimeLog timeLog = new TimeLog("AbstractServiceRegistryImpl:initializeService");
 		if ( log.isTraceEnabled() ) {
 			log.tracev( "Initializing service [role={0}]", serviceBinding.getServiceRole().getName() );
 		}
@@ -248,11 +256,13 @@ public abstract class AbstractServiceRegistryImpl
 		// PHASE 4 : Start service
 		serviceBinding.getLifecycleOwner().startService( serviceBinding );
 
+		timeLog.close();
 		return service;
 	}
 
 	@SuppressWarnings( {"unchecked"})
 	protected <R extends Service> R createService(ServiceBinding<R> serviceBinding) {
+		TimeLog timeLog = new TimeLog("AbstractServiceRegistryImpl:createService");
 		final ServiceInitiator<R> serviceInitiator = serviceBinding.getServiceInitiator();
 		if ( serviceInitiator == null ) {
 			// this condition should never ever occur
@@ -266,6 +276,7 @@ public abstract class AbstractServiceRegistryImpl
 			if ( service != null ) {
 				registerService( serviceBinding, service );
 			}
+			timeLog.complete();
 			return service;
 		}
 		catch ( ServiceException e ) {

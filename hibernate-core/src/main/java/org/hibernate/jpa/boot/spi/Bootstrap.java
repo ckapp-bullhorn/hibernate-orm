@@ -11,6 +11,7 @@ import java.util.Map;
 import javax.persistence.spi.PersistenceUnitInfo;
 import javax.persistence.spi.PersistenceUnitTransactionType;
 
+import org.hibernate.TimeLog;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.jpa.boot.internal.PersistenceUnitInfoDescriptor;
@@ -86,7 +87,9 @@ public final class Bootstrap {
 	public static EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(
 			PersistenceUnitInfo persistenceUnitInfo,
 			Map integration) {
-		return getEntityManagerFactoryBuilder( new PersistenceUnitInfoDescriptor( persistenceUnitInfo ), integration );
+		try (TimeLog timeLog = new TimeLog("Bootstrap:getEntityManagerFactoryBuilder")) {
+			return getEntityManagerFactoryBuilder( new PersistenceUnitInfoDescriptor( persistenceUnitInfo ), integration );
+		}
 	}
 
 	public static EntityManagerFactoryBuilder getEntityManagerFactoryBuilder(
