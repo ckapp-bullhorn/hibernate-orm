@@ -178,6 +178,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 	private static MetamodelImplementor sharedMetamodel;
 	private final transient boolean isSharedMetamodel;
 	private final transient MetamodelImplementor metamodel;
+	private transient MetamodelImplementor tempMetamodel;
 	private final transient CriteriaBuilderImpl criteriaBuilder;
 	private final PersistenceUnitUtil jpaPersistenceUnitUtil;
 	private final transient CacheImplementor cacheAccess;
@@ -318,18 +319,19 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 
 						if (null == sharedMetamodel) {
 							start = System.currentTimeMillis();
-							MetamodelImplementor temp = metadata.getTypeConfiguration().scope(this);
-							((MetamodelImpl) temp).initialize(
+							tempMetamodel = metadata.getTypeConfiguration().scope(this);
+							((MetamodelImpl) tempMetamodel).initialize(
 								metadata,
 								determineJpaMetaModelPopulationSetting(properties)
 							);
 							duration = System.currentTimeMillis() - start;
 							LOG.info( "sharedMetamodel for " + dbName + " built in " + duration );
 
-							sharedMetamodel = temp;
+							sharedMetamodel = tempMetamodel;
 						}
 						this.metamodel = sharedMetamodel;
 					}
+					tempMetamodel = null;
 				}
 				else {
 					this.metamodel = sharedMetamodel;
@@ -583,7 +585,12 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 	 */
 	@Deprecated
 	public TypeResolver getTypeResolver() {
-		return metamodel.getTypeConfiguration().getTypeResolver();
+		if (null != metamodel) {
+			return metamodel.getTypeConfiguration().getTypeResolver();
+		}
+		else {
+			return tempMetamodel.getTypeConfiguration().getTypeResolver();
+		}
 	}
 
 	public QueryPlanCache getQueryPlanCache() {
@@ -699,7 +706,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 	@Override
 	public MetamodelImplementor getMetamodel() {
 		validateNotClosed();
-		return metamodel;
+		return metamodel == null ? tempMetamodel : metamodel;
 	}
 
 	@Override
