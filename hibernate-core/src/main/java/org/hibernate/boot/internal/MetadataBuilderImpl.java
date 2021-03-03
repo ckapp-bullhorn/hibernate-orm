@@ -16,6 +16,7 @@ import javax.persistence.SharedCacheMode;
 
 import org.hibernate.HibernateException;
 import org.hibernate.MultiTenancyStrategy;
+import org.hibernate.TimeLog;
 import org.hibernate.annotations.CacheConcurrencyStrategy;
 import org.hibernate.annotations.common.reflection.ReflectionManager;
 import org.hibernate.boot.AttributeConverterInfo;
@@ -461,16 +462,18 @@ public class MetadataBuilderImpl implements MetadataBuilderImplementor, TypeCont
 
 	@Override
 	public MetadataImplementor build() {
-		final CfgXmlAccessService cfgXmlAccessService = options.serviceRegistry.getService( CfgXmlAccessService.class );
-		if ( cfgXmlAccessService.getAggregatedConfig() != null ) {
-			if ( cfgXmlAccessService.getAggregatedConfig().getMappingReferences() != null ) {
-				for ( MappingReference mappingReference : cfgXmlAccessService.getAggregatedConfig().getMappingReferences() ) {
-					mappingReference.apply( sources );
+		try (TimeLog timeLog = new TimeLog("MetadataBuilderImpl:build");) {
+			final CfgXmlAccessService cfgXmlAccessService = options.serviceRegistry.getService(CfgXmlAccessService.class);
+			if (cfgXmlAccessService.getAggregatedConfig() != null) {
+				if (cfgXmlAccessService.getAggregatedConfig().getMappingReferences() != null) {
+					for (MappingReference mappingReference : cfgXmlAccessService.getAggregatedConfig().getMappingReferences()) {
+						mappingReference.apply(sources);
+					}
 				}
 			}
-		}
 
-		return MetadataBuildingProcess.build( sources, bootstrapContext, options );
+			return MetadataBuildingProcess.build(sources, bootstrapContext, options);
+		}
 	}
 
 	@Override

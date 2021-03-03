@@ -29,6 +29,7 @@ import org.hibernate.DuplicateMappingException;
 import org.hibernate.HibernateException;
 import org.hibernate.MappingException;
 import org.hibernate.SessionFactory;
+import org.hibernate.TimeLog;
 import org.hibernate.annotations.AnyMetaDef;
 import org.hibernate.annotations.common.reflection.XClass;
 import org.hibernate.boot.CacheRegionDefinition;
@@ -2235,11 +2236,13 @@ public class InFlightMetadataCollectorImpl implements InFlightMetadataCollector 
 	 * @return The complete and immutable Metadata instance
 	 */
 	public MetadataImpl buildMetadataInstance(MetadataBuildingContext buildingContext) {
+		TimeLog timeLog = new TimeLog("InFlightMetadataCollectorImpl:buildMetadataInstance");
 		processSecondPasses( buildingContext );
 		processExportableProducers( );
 
+		MetadataImpl metadata;
 		try {
-			return new MetadataImpl(
+			metadata = new MetadataImpl(
 					uuid,
 					options,
 					identifierGeneratorFactory,
@@ -2264,6 +2267,8 @@ public class InFlightMetadataCollectorImpl implements InFlightMetadataCollector 
 		finally {
 			getBootstrapContext().release();
 		}
+		timeLog.complete();
+		return metadata;
 	}
 
 	private void processExportableProducers() {

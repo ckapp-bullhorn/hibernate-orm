@@ -25,6 +25,7 @@ import java.util.zip.ZipEntry;
 import javax.xml.transform.dom.DOMSource;
 
 import org.hibernate.HibernateException;
+import org.hibernate.TimeLog;
 import org.hibernate.boot.archive.spi.InputStreamAccess;
 import org.hibernate.boot.internal.MetadataBuilderImpl;
 import org.hibernate.boot.jaxb.Origin;
@@ -155,8 +156,10 @@ public class MetadataSources implements Serializable {
 	 */
 	@Deprecated
 	public MetadataBuilder getMetadataBuilder(StandardServiceRegistry serviceRegistry) {
-		MetadataBuilderImpl defaultBuilder = new MetadataBuilderImpl( this, serviceRegistry );
-		return getCustomBuilderOrDefault( defaultBuilder );
+		try (TimeLog timeLog = new TimeLog("MetadataSources:getMetadataBuilder");) {
+			MetadataBuilderImpl defaultBuilder = new MetadataBuilderImpl(this, serviceRegistry);
+			return getCustomBuilderOrDefault(defaultBuilder);
+		}
 	}
 
 	/**

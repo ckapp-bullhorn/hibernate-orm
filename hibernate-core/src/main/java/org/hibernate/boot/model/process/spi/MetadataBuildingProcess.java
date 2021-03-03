@@ -10,6 +10,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.hibernate.TimeLog;
 import org.hibernate.boot.AttributeConverterInfo;
 import org.hibernate.boot.MetadataSources;
 import org.hibernate.boot.internal.InFlightMetadataCollectorImpl;
@@ -124,6 +125,7 @@ public class MetadataBuildingProcess {
 			final ManagedResources managedResources,
 			final BootstrapContext bootstrapContext,
 			final MetadataBuildingOptions options) {
+		TimeLog timeLog = new TimeLog("MetadataBuildingProcess:complete");
 		final InFlightMetadataCollectorImpl metadataCollector = new InFlightMetadataCollectorImpl(
 				bootstrapContext,
 				options
@@ -321,7 +323,9 @@ public class MetadataBuildingProcess {
 			}
 		}
 
-		return metadataCollector.buildMetadataInstance( rootMetadataBuildingContext );
+		MetadataImplementor metadataImplementor = metadataCollector.buildMetadataInstance( rootMetadataBuildingContext );
+		timeLog.complete();
+		return metadataImplementor;
 	}
 
 //	todo (7.0) : buildJandexInitializer
