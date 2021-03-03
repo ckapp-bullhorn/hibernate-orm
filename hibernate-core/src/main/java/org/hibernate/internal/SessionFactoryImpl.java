@@ -330,7 +330,8 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 						}
 						this.metamodel = sharedMetamodel;
 					}
-				} else {
+				}
+				else {
 					this.metamodel = sharedMetamodel;
 				}
 			}
