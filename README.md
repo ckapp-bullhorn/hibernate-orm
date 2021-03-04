@@ -1,3 +1,10 @@
+Bullhorn Specific
+=========
+
+- BH build job lives [here](http://hydrogen.bh-bos2.bullhorn.com/job/experimental-jobs/job/hibernate-orm/)
+- We only build hibernate-core
+ 
+
 <img src="http://static.jboss.org/hibernate/images/hibernate_logo_whitebkg_200px.png" />
 
 
