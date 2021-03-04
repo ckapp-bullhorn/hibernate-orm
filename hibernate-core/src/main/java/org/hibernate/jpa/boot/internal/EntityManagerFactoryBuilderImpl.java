@@ -1277,6 +1277,7 @@ public class EntityManagerFactoryBuilderImpl implements EntityManagerFactoryBuil
 	}
 
 	protected void populateSfBuilder(SessionFactoryBuilder sfBuilder, StandardServiceRegistry ssr) {
+		TimeLog timeLog = new TimeLog("EntityManagerFactoryBuilderImpl:populateSfBuilder");
 
 		final StrategySelector strategySelector = ssr.getService( StrategySelector.class );
 
@@ -1320,6 +1321,8 @@ public class EntityManagerFactoryBuilderImpl implements EntityManagerFactoryBuil
 
 		final boolean isSharedMetamodel = readBooleanConfigurationValue( SHARE_METAMODEL );
 		sfBuilder.enableSharedMetamodel(isSharedMetamodel);
+
+		timeLog.complete();
 	}
 
 

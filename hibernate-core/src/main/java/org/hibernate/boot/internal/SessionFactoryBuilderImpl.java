@@ -57,6 +57,7 @@ public class SessionFactoryBuilderImpl implements SessionFactoryBuilderImplement
 	}
 
 	public SessionFactoryBuilderImpl(MetadataImplementor metadata, SessionFactoryOptionsBuilder optionsBuilder) {
+		TimeLog timeLog = new TimeLog("SessionFactoryBuilderImpl:SessionFactoryBuilderImpl");
 		this.metadata = metadata;
 		this.optionsBuilder = optionsBuilder;
 		if ( metadata.getSqlFunctionMap() != null ) {
@@ -64,6 +65,7 @@ public class SessionFactoryBuilderImpl implements SessionFactoryBuilderImplement
 				applySqlFunction( sqlFunctionEntry.getKey(), sqlFunctionEntry.getValue() );
 			}
 		}
+		timeLog.complete();
 	}
 
 	@Override

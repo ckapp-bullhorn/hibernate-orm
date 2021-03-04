@@ -157,6 +157,7 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 
 	@Override
 	public SessionFactoryBuilder getSessionFactoryBuilder() {
+		TimeLog timeLog = new TimeLog("MetadataImpl:getSessionFactoryBuilder");
 		final SessionFactoryBuilderService factoryBuilderService = metadataBuildingOptions.getServiceRegistry().getService( SessionFactoryBuilderService.class );
 		final SessionFactoryBuilderImplementor defaultBuilder = factoryBuilderService.createSessionFactoryBuilder( this, bootstrapContext );
 
@@ -184,6 +185,7 @@ public class MetadataImpl implements MetadataImplementor, Serializable {
 			);
 		}
 
+		timeLog.complete();
 		if ( builder != null ) {
 			return builder;
 		}

@@ -27,6 +27,7 @@ import org.hibernate.MultiTenancyStrategy;
 import org.hibernate.NullPrecedence;
 import org.hibernate.SessionEventListener;
 import org.hibernate.SessionFactoryObserver;
+import org.hibernate.TimeLog;
 import org.hibernate.boot.SchemaAutoTooling;
 import org.hibernate.boot.TempTableDdlTransactionHandling;
 import org.hibernate.boot.registry.StandardServiceRegistry;
@@ -257,6 +258,7 @@ public class SessionFactoryOptionsBuilder implements SessionFactoryOptions {
 
 	@SuppressWarnings({"WeakerAccess", "deprecation"})
 	public SessionFactoryOptionsBuilder(StandardServiceRegistry serviceRegistry, BootstrapContext context) {
+		TimeLog timeLog = new TimeLog("SessionFactoryOptionsBuilder:SessionFactoryOptionsBuilder");
 		this.serviceRegistry = serviceRegistry;
 		this.jpaBootstrap = context.isJpaBootstrap();
 
@@ -535,6 +537,8 @@ public class SessionFactoryOptionsBuilder implements SessionFactoryOptions {
 			log.nativeExceptionHandling51ComplianceJpaBootstrapping();
 			this.nativeExceptionHandling51Compliance = false;
 		}
+
+		timeLog.complete();
 	}
 
 	@SuppressWarnings("deprecation")

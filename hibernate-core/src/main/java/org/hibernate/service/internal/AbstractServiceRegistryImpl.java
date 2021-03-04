@@ -192,7 +192,6 @@ public abstract class AbstractServiceRegistryImpl
 
 	@Override
 	public <R extends Service> R getService(Class<R> serviceRole) {
-		TimeLog timeLog = new TimeLog("AbstractServiceRegistryImpl:getService");
 		// TODO: should an exception be thrown if active == false???
 		R service = serviceRole.cast( initializedServiceByRole.get( serviceRole ) );
 		if ( service != null ) {
@@ -223,7 +222,6 @@ public abstract class AbstractServiceRegistryImpl
 				initializedServiceByRole.put( serviceRole, service );
 			}
 			timeLog2.complete();
-			timeLog.complete();
 			return service;
 		}
 	}
