@@ -206,23 +206,17 @@ public class EntityManagerFactoryBuilderImpl implements EntityManagerFactoryBuil
 			mergedIntegrationSettings.putAll( integrationSettings );
 		}
 
-		TimeLog timeLog1 = new TimeLog("EntityManagerFactoryBuilderImpl:EntityManagerFactoryBuilderImpl:1");
 		// Build the boot-strap service registry, which mainly handles class loader interactions
 		final BootstrapServiceRegistry bsr = buildBootstrapServiceRegistry(
 				mergedIntegrationSettings != null ? mergedIntegrationSettings : integrationSettings,
 				providedClassLoader,
 				providedClassLoaderService
 		);
-		timeLog1.complete();
 
-		TimeLog timeLog2 = new TimeLog("EntityManagerFactoryBuilderImpl:EntityManagerFactoryBuilderImpl:2");
 		// merge configuration sources and build the "standard" service registry
 		final StandardServiceRegistryBuilder ssrBuilder = getStandardServiceRegistryBuilder( bsr );
-		timeLog2.complete();
 
-		TimeLog timeLog3 = new TimeLog("EntityManagerFactoryBuilderImpl:EntityManagerFactoryBuilderImpl:3");
 		final MergedSettings mergedSettings = mergeSettings( persistenceUnit, integrationSettings, ssrBuilder );
-		timeLog3.complete();
 
 		// flush before completion validation
 		if ( "true".equals( mergedSettings.configurationValues.get( Environment.FLUSH_BEFORE_COMPLETION ) ) ) {
@@ -240,7 +234,7 @@ public class EntityManagerFactoryBuilderImpl implements EntityManagerFactoryBuil
 
 		configureIdentifierGenerators( standardServiceRegistry );
 
-		TimeLog timeLog4 = new TimeLog("EntityManagerFactoryBuilderImpl:EntityManagerFactoryBuilderImpl:4");
+		TimeLog timeLog1 = new TimeLog("EntityManagerFactoryBuilderImpl:EntityManagerFactoryBuilderImpl: metadataSources");
 		final MetadataSources metadataSources = new MetadataSources( bsr );
 		List<AttributeConverterDefinition> attributeConverterDefinitions = applyMappingResources( metadataSources );
 
@@ -248,7 +242,7 @@ public class EntityManagerFactoryBuilderImpl implements EntityManagerFactoryBuil
 		applyMetamodelBuilderSettings( mergedSettings, attributeConverterDefinitions );
 
 		applyMetadataBuilderContributor();
-		timeLog4.complete();
+		timeLog1.complete();
 
 		// todo : would be nice to have MetadataBuilder still do the handling of CfgXmlAccessService here
 		//		another option is to immediately handle them here (probably in mergeSettings?) as we encounter them...

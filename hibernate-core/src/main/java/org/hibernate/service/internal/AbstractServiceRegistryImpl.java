@@ -199,7 +199,7 @@ public abstract class AbstractServiceRegistryImpl
 		}
 
 		//Any service initialization needs synchronization
-		TimeLog timeLog1 = new TimeLog("AbstractServiceRegistryImpl:getService: entering synchronized");
+		TimeLog timeLog1 = new TimeLog("AbstractServiceRegistryImpl:getService: entering synchronized", true);
 		synchronized ( this ) {
 			timeLog1.complete();
 			// Check again after having acquired the lock:
@@ -208,7 +208,7 @@ public abstract class AbstractServiceRegistryImpl
 				return service;
 			}
 
-			TimeLog timeLog2 = new TimeLog("AbstractServiceRegistryImpl:getService: building");
+			TimeLog timeLog2 = new TimeLog("AbstractServiceRegistryImpl:getService: building", true);
 			final ServiceBinding<R> serviceBinding = locateServiceBinding( serviceRole );
 			if ( serviceBinding == null ) {
 				throw new UnknownServiceException( serviceRole );
@@ -234,7 +234,7 @@ public abstract class AbstractServiceRegistryImpl
 	}
 
 	private <R extends Service> R initializeService(ServiceBinding<R> serviceBinding) {
-		TimeLog timeLog = new TimeLog("AbstractServiceRegistryImpl:initializeService");
+		TimeLog timeLog = new TimeLog("AbstractServiceRegistryImpl:initializeService", true);
 		if ( log.isTraceEnabled() ) {
 			log.tracev( "Initializing service [role={0}]", serviceBinding.getServiceRole().getName() );
 		}
@@ -260,7 +260,7 @@ public abstract class AbstractServiceRegistryImpl
 
 	@SuppressWarnings( {"unchecked"})
 	protected <R extends Service> R createService(ServiceBinding<R> serviceBinding) {
-		TimeLog timeLog = new TimeLog("AbstractServiceRegistryImpl:createService");
+		TimeLog timeLog = new TimeLog("AbstractServiceRegistryImpl:createService", true);
 		final ServiceInitiator<R> serviceInitiator = serviceBinding.getServiceInitiator();
 		if ( serviceInitiator == null ) {
 			// this condition should never ever occur

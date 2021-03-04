@@ -12,19 +12,38 @@ public class TimeLog implements AutoCloseable {
 	private static final Logger LOG = Logger.getLogger( TimeLog.class );
 	private final long start;
 	private final String message;
+	private final boolean trace;
 	private boolean stillNeedToLog = true;
 
 	public TimeLog(String message) {
+		this(message, false);
+	}
+	public TimeLog(String message, boolean trace) {
 		this.start = System.currentTimeMillis();
 		this.message = message;
-		LOG.info(message + ": started (" + Thread.currentThread().getId() + ")");
+		this.trace = trace;
+
+		String logMessage = message + ": started (" + Thread.currentThread().getId() + ")";
+		if (trace) {
+			LOG.trace(logMessage);
+		}
+		else {
+			LOG.debug(logMessage);
+		}
 	}
 
 	public void complete() {
 		if (stillNeedToLog) {
 			stillNeedToLog = false;
 			final long duration = System.currentTimeMillis() - start;
-			LOG.info(message + ": completed (" + Thread.currentThread().getId() + ") in " + duration);
+			String logMessage = message + ": completed (" + Thread.currentThread().getId() + ") in " + duration;
+			if (trace) {
+				LOG.trace(logMessage);
+
+			}
+			else {
+				LOG.debug(logMessage);
+			}
 		}
 	}
 
