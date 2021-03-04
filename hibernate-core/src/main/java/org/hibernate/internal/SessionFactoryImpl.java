@@ -367,7 +367,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 				synchronized (sharedMetamodelMutex) {
 					if (sharedMetamodelNeedsToBeInitialized) {
 						sharedMetamodelData = buildObservers(metadata, isSharedMetamodel);
-						sharedMetamodelNeedsToBeInitialized = true;
+						sharedMetamodelNeedsToBeInitialized = false;
 						wasInitialized = true;
 					}
 				}
