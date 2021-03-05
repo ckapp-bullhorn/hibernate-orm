@@ -367,9 +367,11 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		if (isSharedMetamodel)  {
 			boolean wasInitialized = false;
 			if (sharedMetamodelNeedsToBeInitialized) {
+				TimeLog timeLog2 = new TimeLog("SessionFactoryImpl:wireObservers: acquiring sharedMetamodelMutex");
 				synchronized (sharedMetamodelMutex) {
+					timeLog2.complete();
 					if (sharedMetamodelNeedsToBeInitialized) {
-						sharedMetamodelData = buildObservers(integratorObserver, metadata, isSharedMetamodel);
+						sharedMetamodelData = buildObservers(integratorObserver, metadata);
 						sharedMetamodelNeedsToBeInitialized = false;
 						wasInitialized = true;
 					}
@@ -385,11 +387,11 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			}
 		}
 		else {
-			buildObservers(integratorObserver, metadata, isSharedMetamodel);
+			buildObservers(integratorObserver, metadata);
 		}
 	}
 
-	private SharedMetamodelData buildObservers(IntegratorObserver integratorObserver, MetadataImplementor metadata, boolean isSharedMetamodel) {
+	private SharedMetamodelData buildObservers(IntegratorObserver integratorObserver, MetadataImplementor metadata) {
 		try {
 			//Generators:
 			this.identifierGenerators = new HashMap<>();
