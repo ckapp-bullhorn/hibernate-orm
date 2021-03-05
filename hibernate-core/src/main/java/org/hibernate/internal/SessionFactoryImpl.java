@@ -382,6 +382,9 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 				this.identifierGenerators = sharedMetamodelData.getIdentifierGenerators();
 				this.metamodel = sharedMetamodelData.getMetamodel();
 				this.namedQueryRepository = sharedMetamodelData.getNamedQueryRepository();
+
+				wireMultitable(metadata);
+
 				this.currentSessionContext = buildCurrentSessionContext();
 				this.fetchProfiles = sharedMetamodelData.getFetchProfiles();
 			}
@@ -389,6 +392,17 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		else {
 			buildObservers(integratorObserver, metadata);
 		}
+	}
+
+	private void wireMultitable(MetadataImplementor metadata) {
+		TimeLog timeLog = new TimeLog("SessionFactoryImpl:wireMultitable");
+		settings.getMultiTableBulkIdStrategy().prepare(
+			jdbcServices,
+			buildLocalConnectionAccess(),
+			metadata,
+			sessionFactoryOptions
+		);
+		timeLog.complete();
 	}
 
 	private SharedMetamodelData buildObservers(IntegratorObserver integratorObserver, MetadataImplementor metadata) {
@@ -424,12 +438,7 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			//Named Queries:
 			this.namedQueryRepository = metadata.buildNamedQueryRepository( this );
 
-			settings.getMultiTableBulkIdStrategy().prepare(
-				jdbcServices,
-				buildLocalConnectionAccess(),
-				metadata,
-				sessionFactoryOptions
-			);
+			wireMultitable(metadata);
 
 			SchemaManagementToolCoordinator.process(
 				metadata,
