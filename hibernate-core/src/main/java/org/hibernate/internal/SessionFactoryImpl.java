@@ -183,28 +183,21 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		}
 	}
 	static class SharedMetamodelData {
-		private final IntegratorObserver integratorObserver;
 		private final Map<String,IdentifierGenerator> identifierGenerators;
 		private final MetamodelImplementor metamodel;
 		private final NamedQueryRepository namedQueryRepository;
 		private final Map<String, FetchProfile> fetchProfiles;
 
 		public SharedMetamodelData(
-			IntegratorObserver integratorObserver,
 			Map<String, IdentifierGenerator> identifierGenerators,
 			MetamodelImplementor metamodel,
 			NamedQueryRepository namedQueryRepository,
 			Map<String, FetchProfile> fetchProfiles
 		) {
-			this.integratorObserver = integratorObserver;
 			this.identifierGenerators = identifierGenerators;
 			this.metamodel = metamodel;
 			this.namedQueryRepository = namedQueryRepository;
 			this.fetchProfiles = fetchProfiles;
-		}
-
-		public IntegratorObserver getIntegratorObserver() {
-			return integratorObserver;
 		}
 
 		public Map<String, IdentifierGenerator> getIdentifierGenerators() {
@@ -361,12 +354,22 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 	}
 
 	private void wireObservers(MetadataImplementor metadata, boolean isSharedMetamodel) {
+		final IntegratorObserver integratorObserver = new IntegratorObserver(this, isSharedMetamodel);
+		this.observer.addObserver( integratorObserver );
+
+		TimeLog timeLog1 = new TimeLog("SessionFactoryImpl:wireObservers: add integrators");
+		for ( Integrator integrator : serviceRegistry.getService( IntegratorService.class ).getIntegrators() ) {
+			integrator.integrate(metadata, this, this.serviceRegistry );
+			integratorObserver.integrators.add( integrator );
+		}
+		timeLog1.complete();
+
 		if (isSharedMetamodel)  {
 			boolean wasInitialized = false;
 			if (sharedMetamodelNeedsToBeInitialized) {
 				synchronized (sharedMetamodelMutex) {
 					if (sharedMetamodelNeedsToBeInitialized) {
-						sharedMetamodelData = buildObservers(metadata, isSharedMetamodel);
+						sharedMetamodelData = buildObservers(integratorObserver, metadata, isSharedMetamodel);
 						sharedMetamodelNeedsToBeInitialized = false;
 						wasInitialized = true;
 					}
@@ -374,8 +377,6 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			}
 
 			if (!wasInitialized) {
-				this.observer.addObserver( sharedMetamodelData.getIntegratorObserver() );
-
 				this.identifierGenerators = sharedMetamodelData.getIdentifierGenerators();
 				this.metamodel = sharedMetamodelData.getMetamodel();
 				this.namedQueryRepository = sharedMetamodelData.getNamedQueryRepository();
@@ -384,20 +385,12 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 			}
 		}
 		else {
-			buildObservers(metadata, isSharedMetamodel);
+			buildObservers(integratorObserver, metadata, isSharedMetamodel);
 		}
 	}
 
-	private SharedMetamodelData buildObservers(MetadataImplementor metadata, boolean isSharedMetamodel) {
-		final IntegratorObserver integratorObserver = new IntegratorObserver(this, isSharedMetamodel);
-		this.observer.addObserver( integratorObserver );
+	private SharedMetamodelData buildObservers(IntegratorObserver integratorObserver, MetadataImplementor metadata, boolean isSharedMetamodel) {
 		try {
-			TimeLog timeLog1 = new TimeLog("SessionFactoryImpl:SessionFactoryImpl: add integrators");
-			for ( Integrator integrator : serviceRegistry.getService( IntegratorService.class ).getIntegrators() ) {
-				integrator.integrate(metadata, this, this.serviceRegistry );
-				integratorObserver.integrators.add( integrator );
-			}
-			timeLog1.complete();
 			//Generators:
 			this.identifierGenerators = new HashMap<>();
 			metadata.getEntityBindings().stream().filter(model -> !model.isInherited() ).forEach(model -> {
@@ -511,7 +504,6 @@ public class SessionFactoryImpl implements SessionFactoryImplementor {
 		}
 
 		return new SharedMetamodelData(
-			integratorObserver,
 			this.identifierGenerators,
 			this.metamodel,
 			this.namedQueryRepository,
