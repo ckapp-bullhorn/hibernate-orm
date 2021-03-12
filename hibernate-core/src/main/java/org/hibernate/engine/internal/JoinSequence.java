@@ -200,9 +200,7 @@ public class JoinSequence {
 						join.getAlias(),
 						enabledFilters
 				);
-				condition = "".equals( manyToManyFilter )
-						? on
-						: "".equals( on ) ? manyToManyFilter : on + " and " + manyToManyFilter;
+				condition = joinWithAnd(on, manyToManyFilter);
 			}
 			else {
 				condition = on;
@@ -245,6 +243,21 @@ public class JoinSequence {
 		}
 
 		return joinFragment;
+	}
+
+	private String joinWithAnd(String firstPart, String secondPart) {
+		if (secondPart != null && secondPart.isEmpty()) {
+			return firstPart;
+		}
+		else if (firstPart != null && firstPart.isEmpty()) {
+			return secondPart;
+		}
+		else if (secondPart.startsWith(" and ")){
+			return firstPart + secondPart;
+		}
+		else {
+			return firstPart + " and " + secondPart;
+		}
 	}
 
 	@SuppressWarnings("SimplifiableIfStatement")

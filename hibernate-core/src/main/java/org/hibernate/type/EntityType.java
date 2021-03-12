@@ -406,12 +406,35 @@ public abstract class EntityType extends AbstractType implements AssociationType
 			SessionFactoryImplementor factory,
 			Map enabledFilters,
 			Set<String> treatAsDeclarations) {
-		if ( isReferenceToPrimaryKey() && ( treatAsDeclarations == null || treatAsDeclarations.isEmpty() ) ) {
+		if (
+				isReferenceToPrimaryKey()
+						&& ( treatAsDeclarations == null || treatAsDeclarations.isEmpty() )
+						&& ( !doesFilterApply(enabledFilters) )
+		) {
 			return "";
 		}
 		else {
 			return getAssociatedJoinable( factory ).filterFragment( alias, enabledFilters, treatAsDeclarations );
 		}
+	}
+
+	private boolean doesFilterApply(Map enabledFilters) {
+		if (enabledFilters == null) {
+			return false;
+		}
+		if (enabledFilters.isEmpty()) {
+			return false;
+		}
+
+		if (!(associatedEntityPersister instanceof org.hibernate.persister.entity.AbstractEntityPersister)) {
+			return false;
+		}
+
+		org.hibernate.persister.entity.AbstractEntityPersister abstractEntityPersister =
+				(org.hibernate.persister.entity.AbstractEntityPersister) associatedEntityPersister;
+
+		org.hibernate.internal.FilterHelper filterHelper = abstractEntityPersister.getFilterHelper();
+		return filterHelper.isAffectedBy(enabledFilters);
 	}
 
 	/**

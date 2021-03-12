@@ -222,6 +222,9 @@ public abstract class AbstractEntityPersister
 
 	// dynamic filters attached to the class-level
 	private final FilterHelper filterHelper;
+	public FilterHelper getFilterHelper() {
+		return filterHelper;
+	}
 
 	private final Set<String> affectingFetchProfileNames = new HashSet<String>();
 
