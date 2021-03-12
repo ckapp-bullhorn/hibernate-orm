@@ -109,8 +109,8 @@ subprojects { subProject ->
 	apply plugin: 'maven-publish-auth'
 	apply plugin: 'osgi'
 
-	apply plugin: 'findbugs'
-	apply plugin: 'checkstyle'
+	// apply plugin: 'findbugs'
+	// apply plugin: 'checkstyle'
 	apply plugin: 'build-dashboard'
 	apply plugin: 'project-report'
 
@@ -167,7 +167,7 @@ subprojects { subProject ->
 		}
 
 		// 6.6 gave me some NPE problems from within checkstyle...
-		checkstyle 'com.puppycrawl.tools:checkstyle:6.5'
+		// checkstyle 'com.puppycrawl.tools:checkstyle:6.5'
 	}
 
 	// mac-specific stuff ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -338,42 +338,42 @@ subprojects { subProject ->
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// Report configs
-	checkstyle {
-		sourceSets = [ subProject.sourceSets.main ]
-		configFile = rootProject.file( 'shared/config/checkstyle/checkstyle.xml' )
-		showViolations = false
-	}
-	// exclude generated java sources - by explicitly setting the base source dir
-	checkstyleMain.source = 'src/main/java'
+	// checkstyle {
+	// 	sourceSets = [ subProject.sourceSets.main ]
+	// 	configFile = rootProject.file( 'shared/config/checkstyle/checkstyle.xml' )
+	// 	showViolations = false
+	// }
+	// // exclude generated java sources - by explicitly setting the base source dir
+	// checkstyleMain.source = 'src/main/java'
 
-	findbugs {
-		sourceSets = [ subProject.sourceSets.main, subProject.sourceSets.test ]
-		ignoreFailures = true
-		toolVersion = '3.0.1'
-		// for now we need to set this to low so that FindBugs will actually report the DM_CONVERT_CASE warning we care about
-		reportLevel = 'low'
-		// remove all low level bug warnings except DM_CONVERT_CASE
-		excludeFilterConfig=resources.text.fromString(excludeAllLowLevelBugsExcept('DM_CONVERT_CASE'))
-	}
+	// findbugs {
+	// 	sourceSets = [ subProject.sourceSets.main, subProject.sourceSets.test ]
+	// 	ignoreFailures = true
+	// 	toolVersion = '3.0.1'
+	// 	// for now we need to set this to low so that FindBugs will actually report the DM_CONVERT_CASE warning we care about
+	// 	reportLevel = 'low'
+	// 	// remove all low level bug warnings except DM_CONVERT_CASE
+	// 	excludeFilterConfig=resources.text.fromString(excludeAllLowLevelBugsExcept('DM_CONVERT_CASE'))
+	// }
 
 	// exclude generated java sources and cfg package is a mess mainly from annotation stuff
-	findbugsMain.doFirst {
-		classes = classes.filter {
-			!it.path.contains( 'org/hibernate/hql/internal/antlr' ) &&
-					!it.path.contains( 'org/hibernate/boot/jaxb/cfg/spi' ) &&
-					!it.path.contains( 'org/hibernate/sql/ordering/antlr/Generated' ) &&
-					!it.path.contains( 'org/hibernate/sql/ordering/antlr/OrderByTemplateTokenTypes' ) &&
-					!it.path.contains( 'org/hibernate/boot/jaxb/hbm/spi/Jaxb' ) &&
-					!it.path.contains( 'org/hibernate/boot/jaxb/hbm/spi/Adapter' ) &&
-					!it.path.contains( 'org/hibernate/boot/jaxb/hbm/spi/ObjectFactory' ) &&
-					!it.path.contains( 'org/hibernate/cfg' ) &&
-					!it.path.contains( '_\$logger' )
-		}
-	}
+	// findbugsMain.doFirst {
+	// 	classes = classes.filter {
+	// 		!it.path.contains( 'org/hibernate/hql/internal/antlr' ) &&
+	// 				!it.path.contains( 'org/hibernate/boot/jaxb/cfg/spi' ) &&
+	// 				!it.path.contains( 'org/hibernate/sql/ordering/antlr/Generated' ) &&
+	// 				!it.path.contains( 'org/hibernate/sql/ordering/antlr/OrderByTemplateTokenTypes' ) &&
+	// 				!it.path.contains( 'org/hibernate/boot/jaxb/hbm/spi/Jaxb' ) &&
+	// 				!it.path.contains( 'org/hibernate/boot/jaxb/hbm/spi/Adapter' ) &&
+	// 				!it.path.contains( 'org/hibernate/boot/jaxb/hbm/spi/ObjectFactory' ) &&
+	// 				!it.path.contains( 'org/hibernate/cfg' ) &&
+	// 				!it.path.contains( '_\$logger' )
+	// 	}
+	// }
 
 		// because cfg package is a mess mainly from annotation stuff
-	checkstyleMain.exclude '**/org/hibernate/cfg/**'
-	checkstyleMain.exclude '**/org/hibernate/cfg/*'
+	// checkstyleMain.exclude '**/org/hibernate/cfg/**'
+	// checkstyleMain.exclude '**/org/hibernate/cfg/*'
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
