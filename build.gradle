@@ -13,6 +13,11 @@ apply from: "./libraries.gradle"
 apply from: "./databases.gradle"
 
 
+String mavenVersion = System.getenv('ARTIFACT_VERSION')
+if (null == mavenVersion || 0 == mavenVersion.length()) {
+	mavenVersion = 'LOCAL'
+}
+
 buildscript {
 	repositories {
 		mavenCentral()
@@ -382,7 +387,11 @@ subprojects { subProject ->
 				artifact( sourcesJar ) {
 					classifier 'sources'
 				}
+
+				artifactId = project.name + '-BH'
+				version = mavenVersion
 			}
+
 			// http://issues.gradle.org/browse/GRADLE-2966
 			// Once ^^ is resolved:
 			//		1) Move hibernate-testing module into hibernate-core tests
@@ -390,6 +399,16 @@ subprojects { subProject ->
 			// We could kind of do this now, but it would just be the jar.  Every module would still need
 			// to duplicate the testing dependencies.  Well, on second thought, we could centralize the
 			// testing dependencies here within the subprojects block
+		}
+
+		repositories {
+			maven {
+				if (mavenVersion.equals('LOCAL') || mavenVersion.endsWith('-SNAPSHOT')) {
+					url 'http://artifactory.bullhorn.com/bh-snapshots'
+				} else {
+					url 'http://artifactory.bullhorn.com/bh-releases'
+				}
+			 }
 		}
 	}
 
