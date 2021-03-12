@@ -25,6 +25,7 @@ import org.hibernate.NullPrecedence;
 import org.hibernate.SessionEventListener;
 import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
+import org.hibernate.TimeLog;
 import org.hibernate.boot.SchemaAutoTooling;
 import org.hibernate.boot.SessionFactoryBuilder;
 import org.hibernate.boot.TempTableDdlTransactionHandling;
@@ -33,6 +34,7 @@ import org.hibernate.boot.registry.selector.spi.StrategySelector;
 import org.hibernate.boot.spi.MetadataImplementor;
 import org.hibernate.boot.spi.SessionFactoryBuilderImplementor;
 import org.hibernate.boot.spi.SessionFactoryOptions;
+import org.hibernate.bytecode.spi.BytecodeProvider;
 import org.hibernate.cache.internal.StandardQueryCacheFactory;
 import org.hibernate.cache.spi.QueryCacheFactory;
 import org.hibernate.cache.spi.RegionFactory;
@@ -44,6 +46,7 @@ import org.hibernate.engine.config.internal.ConfigurationServiceImpl;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.jdbc.env.spi.ExtractedDatabaseMetaData;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
+import org.hibernate.engine.query.spi.HQLQueryPlan;
 import org.hibernate.hql.spi.id.MultiTableBulkIdStrategy;
 import org.hibernate.internal.SessionFactoryImpl;
 import org.hibernate.internal.log.DeprecationLogger;
@@ -127,6 +130,13 @@ public class SessionFactoryBuilderImpl implements SessionFactoryBuilderImplement
 				applySqlFunction( sqlFunctionEntry.getKey(), sqlFunctionEntry.getValue() );
 			}
 		}
+	}
+
+	private boolean isSharedMetamodel;
+	@Override
+	public SessionFactoryBuilder enableSharedMetamodel(boolean enabled) {
+		isSharedMetamodel = enabled;
+		return this;
 	}
 
 	@Override
@@ -473,7 +483,7 @@ public class SessionFactoryBuilderImpl implements SessionFactoryBuilderImplement
 	@Override
 	public SessionFactory build() {
 		metadata.validate();
-		return new SessionFactoryImpl( metadata, buildSessionFactoryOptions() );
+		return new SessionFactoryImpl( metadata, buildSessionFactoryOptions(), isSharedMetamodel );
 	}
 
 	@Override

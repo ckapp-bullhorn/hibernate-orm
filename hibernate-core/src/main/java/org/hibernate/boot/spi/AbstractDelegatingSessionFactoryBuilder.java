@@ -363,6 +363,12 @@ public abstract class AbstractDelegatingSessionFactoryBuilder<T extends Abstract
 	}
 
 	@Override
+	public SessionFactoryBuilder enableSharedMetamodel(boolean enabled) {
+		delegate.enableSharedMetamodel( enabled );
+		return this;
+	}
+
+	@Override
 	@SuppressWarnings("unchecked")
 	public <S extends SessionFactoryBuilder> S unwrap(Class<S> type) {
 		return (S) this;

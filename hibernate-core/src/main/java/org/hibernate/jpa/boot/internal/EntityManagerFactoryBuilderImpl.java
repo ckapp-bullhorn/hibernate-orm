@@ -112,6 +112,7 @@ import static org.hibernate.jpa.AvailableSettings.PERSISTENCE_UNIT_NAME;
 public class EntityManagerFactoryBuilderImpl implements EntityManagerFactoryBuilder {
 	private static final EntityManagerMessageLogger LOG = messageLogger( EntityManagerFactoryBuilderImpl.class );
 
+	public static final String SHARE_METAMODEL = "hibernate.share.metamodel";
 
 	// ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 	// New settings
@@ -929,6 +930,9 @@ public class EntityManagerFactoryBuilderImpl implements EntityManagerFactoryBuil
 		if ( this.cdiBeanManager != null ) {
 			sfBuilder.applyBeanManager( cdiBeanManager );
 		}
+
+		final boolean isSharedMetamodel = readBooleanConfigurationValue( SHARE_METAMODEL );
+		sfBuilder.enableSharedMetamodel(isSharedMetamodel);
 	}
 
 

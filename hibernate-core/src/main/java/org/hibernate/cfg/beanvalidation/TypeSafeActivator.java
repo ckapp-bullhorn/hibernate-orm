@@ -28,6 +28,7 @@ import javax.validation.metadata.PropertyDescriptor;
 
 import org.hibernate.AssertionFailure;
 import org.hibernate.MappingException;
+import org.hibernate.TimeLog;
 import org.hibernate.boot.internal.ClassLoaderAccessImpl;
 import org.hibernate.boot.registry.classloading.spi.ClassLoaderService;
 import org.hibernate.boot.registry.classloading.spi.ClassLoadingException;
@@ -42,6 +43,7 @@ import org.hibernate.event.service.spi.EventListenerRegistry;
 import org.hibernate.event.spi.EventType;
 import org.hibernate.internal.CoreMessageLogger;
 import org.hibernate.internal.util.StringHelper;
+import org.hibernate.jpa.boot.internal.EntityManagerFactoryBuilderImpl;
 import org.hibernate.mapping.Column;
 import org.hibernate.mapping.Component;
 import org.hibernate.mapping.PersistentClass;
@@ -147,16 +149,48 @@ class TypeSafeActivator {
 			return;
 		}
 
-		applyRelationalConstraints(
-				factory,
-				activationContext.getMetadata().getEntityBindings(),
-				cfgService.getSettings(),
-				activationContext.getServiceRegistry().getService( JdbcServices.class ).getDialect(),
-				new ClassLoaderAccessImpl(
-						null,
-						activationContext.getServiceRegistry().getService( ClassLoaderService.class )
-				)
-		);
+		final boolean isSharedMetamodel = readBooleanConfigurationValue( cfgService.getSettings(), EntityManagerFactoryBuilderImpl.SHARE_METAMODEL );
+
+		if (isSharedMetamodel) {
+			if (sharedMetamodelNeedsToBeInitialized) {
+				TimeLog timeLog = new TimeLog("TypeSafeActivator:applyRelationalConstraints : acquiring sharedMetamodelMutex");
+				synchronized (sharedMetamodelMutex) {
+					timeLog.complete();
+					if (sharedMetamodelNeedsToBeInitialized) {
+						applyRelationalConstraints(
+								factory,
+								activationContext.getMetadata().getEntityBindings(),
+								cfgService.getSettings(),
+								activationContext.getServiceRegistry().getService( JdbcServices.class ).getDialect(),
+								new ClassLoaderAccessImpl(
+										null,
+										activationContext.getServiceRegistry().getService( ClassLoaderService.class )
+								)
+						);
+						sharedMetamodelNeedsToBeInitialized = false;
+					}
+				}
+			}
+		}
+		else {
+			applyRelationalConstraints(
+					factory,
+					activationContext.getMetadata().getEntityBindings(),
+					cfgService.getSettings(),
+					activationContext.getServiceRegistry().getService( JdbcServices.class ).getDialect(),
+					new ClassLoaderAccessImpl(
+							null,
+							activationContext.getServiceRegistry().getService( ClassLoaderService.class )
+					)
+			);
+		}
+	}
+	private static Object sharedMetamodelMutex = "";
+	private static boolean sharedMetamodelNeedsToBeInitialized = true;
+
+	private static boolean readBooleanConfigurationValue(Map settings, String propertyName) {
+		Object propertyValue = settings.get( propertyName );
+		return propertyValue != null && Boolean.parseBoolean( propertyValue.toString() );
 	}
 
 	@SuppressWarnings( {"UnusedDeclaration"})

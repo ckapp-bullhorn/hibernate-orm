@@ -47,6 +47,7 @@ import org.hibernate.SessionFactory;
 import org.hibernate.SessionFactoryObserver;
 import org.hibernate.StatelessSession;
 import org.hibernate.StatelessSessionBuilder;
+import org.hibernate.TimeLog;
 import org.hibernate.TypeHelper;
 import org.hibernate.boot.cfgxml.spi.CfgXmlAccessService;
 import org.hibernate.boot.cfgxml.spi.LoadedConfig;
@@ -61,11 +62,13 @@ import org.hibernate.context.internal.ManagedSessionContext;
 import org.hibernate.context.internal.ThreadLocalSessionContext;
 import org.hibernate.context.spi.CurrentSessionContext;
 import org.hibernate.context.spi.CurrentTenantIdentifierResolver;
+import org.hibernate.dialect.Dialect;
 import org.hibernate.dialect.function.SQLFunctionRegistry;
 import org.hibernate.engine.config.spi.ConfigurationService;
 import org.hibernate.engine.jdbc.connections.spi.ConnectionProvider;
 import org.hibernate.engine.jdbc.connections.spi.JdbcConnectionAccess;
 import org.hibernate.engine.jdbc.connections.spi.MultiTenantConnectionProvider;
+import org.hibernate.engine.jdbc.env.spi.JdbcEnvironment;
 import org.hibernate.engine.jdbc.spi.JdbcServices;
 import org.hibernate.engine.jndi.spi.JndiService;
 import org.hibernate.engine.profile.Association;
@@ -96,6 +99,7 @@ import org.hibernate.jpa.internal.AfterCompletionActionLegacyJpaImpl;
 import org.hibernate.jpa.internal.ExceptionMapperLegacyJpaImpl;
 import org.hibernate.jpa.internal.ManagedFlushCheckerLegacyJpaImpl;
 import org.hibernate.jpa.internal.PersistenceUnitUtilImpl;
+import org.hibernate.mapping.PersistentClass;
 import org.hibernate.mapping.RootClass;
 import org.hibernate.metadata.ClassMetadata;
 import org.hibernate.metadata.CollectionMetadata;
@@ -107,6 +111,7 @@ import org.hibernate.procedure.ProcedureCall;
 import org.hibernate.proxy.EntityNotFoundDelegate;
 import org.hibernate.proxy.HibernateProxyHelper;
 import org.hibernate.query.criteria.internal.CriteriaBuilderImpl;
+import org.hibernate.query.spi.NamedQueryRepository;
 import org.hibernate.resource.jdbc.spi.PhysicalConnectionHandlingMode;
 import org.hibernate.resource.jdbc.spi.StatementInspector;
 import org.hibernate.resource.transaction.backend.jta.internal.synchronization.AfterCompletionAction;
@@ -156,6 +161,74 @@ public final class SessionFactoryImpl implements SessionFactoryImplementor {
 
 	private static final IdentifierGenerator UUID_GENERATOR = UUIDGenerator.buildSessionFactoryUniqueIdentifierGenerator();
 
+	private static class IntegratorObserver implements SessionFactoryObserver {
+		private ArrayList<Integrator> integrators = new ArrayList<>();
+
+		private final SessionFactoryImpl sessionFactory;
+		private final boolean isSharedMetamodel;
+
+		public IntegratorObserver(SessionFactoryImpl sessionFactory, boolean isSharedMetamodel) {
+			this.sessionFactory = sessionFactory;
+			this.isSharedMetamodel = isSharedMetamodel;
+		}
+
+		@Override
+		public void sessionFactoryCreated(SessionFactory factory) {
+		}
+
+		@Override
+		public void sessionFactoryClosed(SessionFactory factory) {
+			if (!isSharedMetamodel) {
+				for (Integrator integrator : integrators) {
+					integrator.disintegrate(sessionFactory, sessionFactory.serviceRegistry);
+				}
+				integrators.clear();
+			}
+		}
+	}
+
+	private static class SharedMetamodelData {
+		private final Map<String,IdentifierGenerator> identifierGenerators;
+		private final MetamodelImpl metamodel;
+		private final NamedQueryRepository namedQueryRepository;
+		private final Map<String, FetchProfile> fetchProfiles;
+
+		public SharedMetamodelData(
+				Map<String, IdentifierGenerator> identifierGenerators,
+				MetamodelImpl metamodel,
+				NamedQueryRepository namedQueryRepository,
+				Map<String, FetchProfile> fetchProfiles
+		) {
+			this.identifierGenerators = identifierGenerators;
+			this.metamodel = metamodel;
+			this.namedQueryRepository = namedQueryRepository;
+			this.fetchProfiles = fetchProfiles;
+		}
+
+		public Map<String, IdentifierGenerator> getIdentifierGenerators() {
+			return identifierGenerators;
+		}
+
+		public MetamodelImpl getMetamodel() {
+			return metamodel;
+		}
+
+		public NamedQueryRepository getNamedQueryRepository() {
+			return namedQueryRepository;
+		}
+
+		public Map<String, FetchProfile> getFetchProfiles() {
+			return fetchProfiles;
+		}
+	}
+
+	private static Object sharedMetamodelMutex = "";
+	private static boolean sharedMetamodelNeedsToBeInitialized = true;
+	private static SharedMetamodelData sharedMetamodelData;
+
+	private final boolean isSharedMetamodel;
+
+
 	private final String name;
 	private final String uuid;
 	private transient boolean isClosed;
@@ -173,28 +246,30 @@ public final class SessionFactoryImpl implements SessionFactoryImplementor {
 
 	// todo : org.hibernate.jpa.boot.spi.PersistenceUnitDescriptor too?
 
-	private final transient MetamodelImpl metamodel;
+	private transient MetamodelImpl metamodel;
 	private final transient CriteriaBuilderImpl criteriaBuilder;
 	private final PersistenceUnitUtil jpaPersistenceUnitUtil;
 	private final transient CacheImplementor cacheAccess;
-	private final transient org.hibernate.query.spi.NamedQueryRepository namedQueryRepository;
+	private transient org.hibernate.query.spi.NamedQueryRepository namedQueryRepository;
 	private final transient QueryPlanCache queryPlanCache;
 
-	private final transient CurrentSessionContext currentSessionContext;
+	private transient CurrentSessionContext currentSessionContext;
 
 	private DelayedDropAction delayedDropAction;
 
 	// todo : move to MetamodelImpl
-	private final transient Map<String,IdentifierGenerator> identifierGenerators;
+	private transient Map<String,IdentifierGenerator> identifierGenerators;
 	private final transient Map<String, FilterDefinition> filters;
-	private final transient Map<String, FetchProfile> fetchProfiles;
+	private transient Map<String, FetchProfile> fetchProfiles;
 
 	private final transient TypeResolver typeResolver;
 	private final transient TypeHelper typeHelper;
 
 
-	public SessionFactoryImpl(final MetadataImplementor metadata, SessionFactoryOptions options) {
+	public SessionFactoryImpl(final MetadataImplementor metadata, SessionFactoryOptions options, final boolean isSharedMetamodel) {
 		LOG.debug( "Building session factory" );
+
+		this.isSharedMetamodel = isSharedMetamodel;
 
 		this.sessionFactoryOptions = options;
 		this.settings = new Settings( options, metadata );
@@ -221,7 +296,7 @@ public final class SessionFactoryImpl implements SessionFactoryImplementor {
 			throw new AssertionFailure("Could not generate UUID");
 		}
 
-		final JdbcServices jdbcServices = serviceRegistry.getService( JdbcServices.class );
+		jdbcServices = serviceRegistry.getService( JdbcServices.class );
 
 		this.properties = new HashMap<>();
 		this.properties.putAll( serviceRegistry.getService( ConfigurationService.class ).getSettings() );
@@ -254,27 +329,58 @@ public final class SessionFactoryImpl implements SessionFactoryImplementor {
 
 		this.queryPlanCache = new QueryPlanCache( this );
 
-		class IntegratorObserver implements SessionFactoryObserver {
-			private ArrayList<Integrator> integrators = new ArrayList<>();
+		wireObservers( metadata, isSharedMetamodel );
 
-			@Override
-			public void sessionFactoryCreated(SessionFactory factory) {
-			}
+		this.observer.sessionFactoryCreated( this );
 
-			@Override
-			public void sessionFactoryClosed(SessionFactory factory) {
-				for ( Integrator integrator : integrators ) {
-					integrator.disintegrate( SessionFactoryImpl.this, SessionFactoryImpl.this.serviceRegistry );
-				}
-				integrators.clear();
-			}
-		}
-		final IntegratorObserver integratorObserver = new IntegratorObserver();
+		SessionFactoryRegistry.INSTANCE.addSessionFactory(
+				uuid,
+				name,
+				settings.isSessionFactoryNameAlsoJndiName(),
+				this,
+				serviceRegistry.getService( JndiService.class )
+		);
+
+	}
+
+	private void wireObservers( final MetadataImplementor metadata, final boolean isSharedMetamodel ) {
+		final IntegratorObserver integratorObserver = new IntegratorObserver( this, isSharedMetamodel );
 		this.observer.addObserver( integratorObserver );
 		for ( Integrator integrator : serviceRegistry.getService( IntegratorService.class ).getIntegrators() ) {
 			integrator.integrate( metadata, this, this.serviceRegistry );
 			integratorObserver.integrators.add( integrator );
 		}
+
+		if ( isSharedMetamodel ) {
+			boolean wasInitialized = false;
+			if ( sharedMetamodelNeedsToBeInitialized ) {
+				TimeLog timeLog2 = new TimeLog( "SessionFactoryImpl:wireObservers: acquiring sharedMetamodelMutex" );
+				synchronized ( sharedMetamodelMutex ) {
+					timeLog2.complete();
+					if ( sharedMetamodelNeedsToBeInitialized ) {
+						sharedMetamodelData = buildObservers( integratorObserver, metadata );
+						sharedMetamodelNeedsToBeInitialized = false;
+						wasInitialized = true;
+					}
+				}
+			}
+
+			if ( !wasInitialized ) {
+				this.identifierGenerators = sharedMetamodelData.getIdentifierGenerators();
+				this.metamodel = sharedMetamodelData.getMetamodel();
+				this.namedQueryRepository = sharedMetamodelData.getNamedQueryRepository();
+
+				wireMultitable( metadata );
+
+				this.currentSessionContext = buildCurrentSessionContext();
+				this.fetchProfiles = sharedMetamodelData.getFetchProfiles();
+			}
+		} else {
+			buildObservers( integratorObserver, metadata );
+		}
+	}
+
+	private SharedMetamodelData buildObservers( IntegratorObserver integratorObserver, final MetadataImplementor metadata ) {
 		try {
 			//Generators:
 
@@ -290,7 +396,12 @@ public final class SessionFactoryImpl implements SessionFactoryImplementor {
 				identifierGenerators.put( model.getEntityName(), generator );
 			} );
 
-			LOG.debug( "Instantiated session factory" );
+			String dbName =
+					(null != jdbcServices && null != jdbcServices.getJdbcEnvironment())
+							? String.valueOf(jdbcServices.getJdbcEnvironment().getCurrentCatalog())
+							: "";
+
+			LOG.debug( "Instantiated session factory: " + dbName );
 
 			this.metamodel = new MetamodelImpl( this );
 			this.metamodel.initialize( metadata, determineJpaMetaModelPopulationSetting( properties ) );
@@ -298,12 +409,7 @@ public final class SessionFactoryImpl implements SessionFactoryImplementor {
 			//Named Queries:
 			this.namedQueryRepository = metadata.buildNamedQueryRepository( this );
 
-			settings.getMultiTableBulkIdStrategy().prepare(
-					jdbcServices,
-					buildLocalConnectionAccess(),
-					metadata,
-					sessionFactoryOptions
-			);
+			wireMultitable( metadata );
 
 			SchemaManagementToolCoordinator.process(
 					metadata,
@@ -312,7 +418,7 @@ public final class SessionFactoryImpl implements SessionFactoryImplementor {
 					action -> SessionFactoryImpl.this.delayedDropAction = action
 			);
 
-			currentSessionContext = buildCurrentSessionContext();
+			this.currentSessionContext = buildCurrentSessionContext();
 
 			//checking for named queries
 			if ( settings.isNamedQueryStartupCheckingEnabled() ) {
@@ -361,16 +467,6 @@ public final class SessionFactoryImpl implements SessionFactoryImplementor {
 				}
 				fetchProfiles.put( fetchProfile.getName(), fetchProfile );
 			}
-
-			this.observer.sessionFactoryCreated( this );
-
-			SessionFactoryRegistry.INSTANCE.addSessionFactory(
-					uuid,
-					name,
-					settings.isSessionFactoryNameAlsoJndiName(),
-					this,
-					serviceRegistry.getService( JndiService.class )
-			);
 		}
 		catch (Exception e) {
 			for ( Integrator integrator : serviceRegistry.getService( IntegratorService.class ).getIntegrators() ) {
@@ -379,6 +475,22 @@ public final class SessionFactoryImpl implements SessionFactoryImplementor {
 			}
 			throw e;
 		}
+
+		return new SharedMetamodelData(
+				this.identifierGenerators,
+				this.metamodel,
+				this.namedQueryRepository,
+				this.fetchProfiles
+		);
+	}
+
+	private void wireMultitable( final MetadataImplementor metadata ) {
+		settings.getMultiTableBulkIdStrategy().prepare(
+				jdbcServices,
+				buildLocalConnectionAccess(),
+				metadata,
+				sessionFactoryOptions
+		);
 	}
 
 	private void applyCfgXmlValues(LoadedConfig aggregatedConfig, SessionFactoryServiceRegistry serviceRegistry) {
@@ -736,7 +848,9 @@ public final class SessionFactoryImpl implements SessionFactoryImplementor {
 		settings.getMultiTableBulkIdStrategy().release( serviceRegistry.getService( JdbcServices.class ), buildLocalConnectionAccess() );
 
 		cacheAccess.close();
-		metamodel.close();
+		if ( metamodel != null && !isSharedMetamodel ) {
+			metamodel.close();
+		}
 
 		queryPlanCache.cleanup();
 
