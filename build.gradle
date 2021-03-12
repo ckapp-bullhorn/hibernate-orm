@@ -146,7 +146,7 @@ subprojects { subProject ->
 		testCompile( libraries.byteman_bmunit )
 
 		testRuntime( libraries.log4j )
-		testRuntime( libraries.javassist )
+		testRuntime( 'org.javassist:javassist:3.20.0-GA' )
 		testRuntime( libraries.woodstox )
 
 		//Databases

@@ -70,7 +70,7 @@ dependencies {
     testRuntime( libraries.expression_language_api )
     testRuntime( libraries.expression_language_impl )
     testRuntime( 'jaxen:jaxen:1.1' )
-    testRuntime( libraries.javassist )
+    testRuntime( 'org.javassist:javassist:3.20.0-GA' )
     testCompile( project( ':hibernate-jpamodelgen' ) )
 }
 
